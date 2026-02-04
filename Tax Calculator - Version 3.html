@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>India Income Tax Calculator (FY 2025–26) — New vs Old (with Surcharge)</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#121b2e; --muted:#9fb0d0; --text:#e8eefc; --accent:#6aa7ff;
+      --good:#5ee08b; --bad:#ff6a6a; --line:rgba(255,255,255,.10);
+    }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+          background:linear-gradient(135deg,#081027,#0b1220); color:var(--text); }
+    .wrap{ max-width:1150px; margin:28px auto; padding:0 16px; }
+    h1{ font-size:1.4rem; margin:0 0 6px; }
+    .sub{ color:var(--muted); margin:0 0 18px; font-size:.95rem; line-height:1.35rem; }
+    .grid{ display:grid; grid-template-columns: 1fr; gap:14px; }
+    .card{ background:rgba(18,27,46,.92); border:1px solid rgba(255,255,255,.08); border-radius:14px;
+           padding:14px; box-shadow:0 14px 40px rgba(0,0,0,.28); }
+    label{ display:block; color:var(--muted); font-size:.88rem; margin:10px 0 6px; }
+    input,select{ width:100%; padding:10px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.14);
+                  background:#0c1427; color:var(--text); outline:none; }
+    input:focus,select:focus{ border-color:rgba(106,167,255,.55); box-shadow:0 0 0 3px rgba(106,167,255,.18); }
+    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    @media (max-width: 860px){ .row{ grid-template-columns:1fr; } }
+    .btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; align-items:center; }
+    button{ cursor:pointer; border:1px solid rgba(255,255,255,.14);
+            background:linear-gradient(180deg, rgba(106,167,255,.22), rgba(106,167,255,.08));
+            color:var(--text); padding:10px 14px; border-radius:12px; font-weight:650; }
+    button:hover{ border-color:rgba(106,167,255,.55); }
+    .pill{ display:inline-block; padding:6px 10px; border-radius:999px; font-size:.82rem; color:var(--muted);
+           border:1px solid rgba(255,255,255,.12); }
+    .compare{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media (max-width: 960px){ .compare{ grid-template-columns:1fr; } }
+    .titleRow{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:6px; }
+    .cardTitle{ font-weight:800; }
+    .badge{ font-size:.82rem; padding:6px 10px; border-radius:999px; border:1px solid var(--line); color:var(--muted); }
+    .badge.good{ border-color:rgba(94,224,139,.5); color:var(--good); }
+    .badge.bad{ border-color:rgba(255,106,106,.5); color:var(--bad); }
+    .big{ font-size:1.45rem; font-weight:900; }
+    .muted{ color:var(--muted); }
+    .kv{ display:grid; gap:8px; margin-top:10px; }
+    .kv .item{ display:flex; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(255,255,255,.08); padding:8px 0; }
+    .kv .k{ color:var(--muted); }
+    .kv .v{ font-weight:650; }
+    .summary{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .summary .chip{ border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+    .note{ font-size:.86rem; color:var(--muted); line-height:1.35rem; }
+    .warn{ border-left:3px solid rgba(255,106,106,.8); padding-left:10px; margin-top:10px; }
+    .ok{ border-left:3px solid rgba(94,224,139,.7); padding-left:10px; margin-top:10px; }
+    .small{ font-size:.82rem; color:var(--muted); }
+
+    /* Footer */
+    footer{
+      max-width:1150px;
+      margin: 18px auto 28px;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: .85rem;
+      line-height: 1.3rem;
+      text-align:center;
+    }
+    footer .footCard{
+      display:inline-block;
+      background: rgba(18,27,46,.65);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    footer a{ color: var(--accent); text-decoration: none; }
+    footer a:hover{ text-decoration: underline; }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+  <h1>India Income‑tax Calculator (FY 2025–26 / AY 2026–27) — New vs Old (with Surcharge)</h1>
+  <p class="sub">
+    Computes <b>both regimes together</b> for Individuals (normal income). Includes Sec 87A rebate, surcharge (with marginal relief) and 4% cess.
+  </p>
+
+  <!-- INPUTS -->
+  <div class="card">
+    <div class="row">
+      <div>
+        <label>Resident Individual?</label>
+        <select id="resident">
+          <option value="yes" selected>Yes (Resident)</option>
+          <option value="no">No (Non-Resident)</option>
+        </select>
+      </div>
+      <div>
+        <label>Income Type</label>
+        <select id="incomeType">
+          <option value="salaried" selected>Salaried / Pension</option>
+          <option value="nonSalaried">Non‑salaried (business/profession/other)</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Gross Total Income (₹) — annual total (normal income)</label>
+    <input id="income" type="number" min="0" step="100" value="1500000" />
+
+    <div class="row">
+      <div>
+        <label>Apply Standard Deduction (Salaried/Pension)?</label>
+        <select id="stdDed">
+          <option value="yes" selected>Yes</option>
+          <option value="no">No</option>
+        </select>
+        <div class="small">Standard deduction used: New ₹75,000; Old ₹50,000 (if applicable).</div>
+      </div>
+      <div>
+        <label>Old Regime Deductions/Exemptions (₹)</label>
+        <input id="oldDeductions" type="number" min="0" step="100" value="200000" />
+        <div class="small">Applied <b>only</b> to Old regime (80C/80D/HRA etc.). New regime ignores these.</div>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button id="calcBtn" type="button">Calculate (Both)</button>
+      <button id="resetBtn" type="button">Reset</button>
+      <span class="pill">Includes surcharge + marginal relief + 4% cess</span>
+    </div>
+
+    <p class="note warn">
+      <b>Important:</b> This estimator covers <b>normal income</b>. Special-rate income (capital gains/dividend) can have different surcharge caps (e.g., 15%),
+      not modeled here.
+    </p>
+
+    <p class="note ok" id="eligibilityNote"></p>
+  </div>
+
+  <!-- COMPARISON SUMMARY -->
+  <div class="card">
+    <div class="summary">
+      <div class="chip">
+        <div class="muted">Cheaper Regime</div>
+        <div class="big" id="bestRegime">—</div>
+      </div>
+      <div class="chip">
+        <div class="muted">Difference (Savings)</div>
+        <div class="big" id="savings">—</div>
+      </div>
+      <div class="chip">
+        <div class="muted">Surcharge Cap</div>
+        <div class="small">New regime max 25%; Old regime can go up to 37% beyond ₹5 Cr.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE-BY-SIDE RESULTS -->
+  <div class="compare">
+    <!-- NEW -->
+    <div class="card">
+      <div class="titleRow">
+        <div class="cardTitle">New Regime (FY 2025–26)</div>
+        <span class="badge" id="newBadge">—</span>
+      </div>
+      <div class="muted">Total Tax Payable (incl. surcharge & 4% cess)</div>
+      <div class="big" id="newTotal">₹ —</div>
+      <div class="muted" id="newEffective">Effective rate: —</div>
+
+      <div class="kv">
+        <div class="item"><div class="k">Gross Income</div><div class="v" id="newIncome">—</div></div>
+        <div class="item"><div class="k">Less: Standard Deduction</div><div class="v" id="newStd">—</div></div>
+        <div class="item"><div class="k">Less: Other deductions</div><div class="v" id="newOther">₹ 0</div></div>
+        <div class="item"><div class="k"><b>Taxable Income</b></div><div class="v" id="newTaxable">—</div></div>
+
+        <div class="item"><div class="k">Income Tax (before rebate)</div><div class="v" id="newTaxBefore">—</div></div>
+        <div class="item"><div class="k">Rebate (Sec 87A)</div><div class="v" id="newRebate">—</div></div>
+        <div class="item"><div class="k">Tax (after rebate)</div><div class="v" id="newTaxAfterRebate">—</div></div>
+
+        <div class="item"><div class="k">Surcharge</div><div class="v" id="newSurcharge">—</div></div>
+        <div class="item"><div class="k">Tax + Surcharge</div><div class="v" id="newTaxPlusSurcharge">—</div></div>
+        <div class="item"><div class="k">Cess @ 4%</div><div class="v" id="newCess">—</div></div>
+      </div>
+
+      <p class="note" id="newNotes"></p>
+    </div>
+
+    <!-- OLD -->
+    <div class="card">
+      <div class="titleRow">
+        <div class="cardTitle">Old Regime (FY 2025–26)</div>
+        <span class="badge" id="oldBadge">—</span>
+      </div>
+      <div class="muted">Total Tax Payable (incl. surcharge & 4% cess)</div>
+      <div class="big" id="oldTotal">₹ —</div>
+      <div class="muted" id="oldEffective">Effective rate: —</div>
+
+      <div class="kv">
+        <div class="item"><div class="k">Gross Income</div><div class="v" id="oldIncome">—</div></div>
+        <div class="item"><div class="k">Less: Standard Deduction</div><div class="v" id="oldStd">—</div></div>
+        <div class="item"><div class="k">Less: Other deductions (Old)</div><div class="v" id="oldOther">—</div></div>
+        <div class="item"><div class="k"><b>Taxable Income</b></div><div class="v" id="oldTaxable">—</div></div>
+
+        <div class="item"><div class="k">Income Tax (before rebate)</div><div class="v" id="oldTaxBefore">—</div></div>
+        <div class="item"><div class="k">Rebate (Sec 87A)</div><div class="v" id="oldRebate">—</div></div>
+        <div class="item"><div class="k">Tax (after rebate)</div><div class="v" id="oldTaxAfterRebate">—</div></div>
+
+        <div class="item"><div class="k">Surcharge</div><div class="v" id="oldSurcharge">—</div></div>
+        <div class="item"><div class="k">Tax + Surcharge</div><div class="v" id="oldTaxPlusSurcharge">—</div></div>
+        <div class="item"><div class="k">Cess @ 4%</div><div class="v" id="oldCess">—</div></div>
+      </div>
+
+      <p class="note" id="oldNotes"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ✅ Footer with your name -->
+<footer>
+  <div class="footCard">
+    <div>© <span id="yearNow"></span> <b>CA Navneet Singh Bagga</b>. All rights reserved.</div>
+    <div class="small">This calculator is for estimation/educational use only and does not constitute tax advice.</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  // Put current year in footer
+  document.addEventListener("DOMContentLoaded", function(){
+    var y = new Date().getFullYear();
+    var el = document.getElementById("yearNow");
+    if (el) el.textContent = y;
+  });
+
+  // Slabs FY 2025-26
+  const slabsNew = [
+    { upto: 400000, rate: 0.00 },
+    { upto: 800000, rate: 0.05 },
+    { upto: 1200000, rate: 0.10 },
+    { upto: 1600000, rate: 0.15 },
+    { upto: 2000000, rate: 0.20 },
+    { upto: 2400000, rate: 0.25 },
+    { upto: Infinity, rate: 0.30 }
+  ];
+
+  const slabsOld = [
+    { upto: 250000, rate: 0.00 },
+    { upto: 500000, rate: 0.05 },
+    { upto: 1000000, rate: 0.20 },
+    { upto: Infinity, rate: 0.30 }
+  ];
+
+  // Surcharge thresholds (Total/Taxable income)
+  const SUR_T1 = 5000000;   // 50 lakh
+  const SUR_T2 = 10000000;  // 1 crore
+  const SUR_T3 = 20000000;  // 2 crore
+  const SUR_T4 = 50000000;  // 5 crore
+
+  function byId(id){ return document.getElementById(id); }
+
+  function fmt(n){
+    n = Math.max(0, Number(n) || 0);
+    return "₹ " + n.toLocaleString("en-IN", { maximumFractionDigits: 0 });
+  }
+
+  function pct(p){
+    return (p * 100).toFixed(0) + "%";
+  }
+
+  function taxBySlabs(taxable, slabs){
+    let remaining = taxable, lastUpto = 0, tax = 0;
+    for (const s of slabs){
+      const band = Math.min(remaining, s.upto - lastUpto);
+      if (band > 0) tax += band * s.rate;
+      remaining -= band;
+      lastUpto = s.upto;
+      if (remaining <= 0) break;
+    }
+    return tax;
+  }
+
+  // Returns {rate, lowerLimit} for the bracket where taxable falls
+  // New regime is capped at 25% beyond 2Cr (including above 5Cr).
+  function getSurchargeInfo(taxable, regime){
+    if (taxable <= SUR_T1) return { rate: 0, lowerLimit: 0 };
+
+    if (taxable <= SUR_T2) return { rate: 0.10, lowerLimit: SUR_T1 };
+    if (taxable <= SUR_T3) return { rate: 0.15, lowerLimit: SUR_T2 };
+    if (taxable <= SUR_T4) return { rate: 0.25, lowerLimit: SUR_T3 };
+
+    // Above 5Cr:
+    if (regime === "old") return { rate: 0.37, lowerLimit: SUR_T4 };
+    return { rate: 0.25, lowerLimit: SUR_T4 }; // new regime cap
+  }
+
+  // Apply marginal relief on surcharge:
+  // Tax + surcharge cannot exceed Tax(at threshold) + (income - threshold)
+  function applySurchargeWithMarginalRelief(baseTaxAfterRebate, taxable, regime, baseTaxAt){
+    const info = getSurchargeInfo(taxable, regime);
+    const rate = info.rate;
+    const lower = info.lowerLimit;
+
+    if (rate === 0) {
+      return { rate, surcharge: 0, relief: 0, lowerLimit: lower };
+    }
+
+    let surcharge = baseTaxAfterRebate * rate;
+
+    // Compute marginal relief cap
+    const taxAtLower = baseTaxAt(lower); // tax (after rebate) at threshold taxable income
+    const maxAllowed = taxAtLower + (taxable - lower);
+
+    const taxPlusSurcharge = baseTaxAfterRebate + surcharge;
+
+    let relief = 0;
+    if (taxPlusSurcharge > maxAllowed) {
+      relief = taxPlusSurcharge - maxAllowed;
+      surcharge = Math.max(0, surcharge - relief);
+    }
+
+    return { rate, surcharge, relief, lowerLimit: lower };
+  }
+
+  // Build base tax function (after rebate, before surcharge/cess) given regime rules
+  function makeBaseTaxCalculator(regime, resident){
+    const slabs = (regime === "new") ? slabsNew : slabsOld;
+    return function(taxable){
+      const taxBefore = taxBySlabs(taxable, slabs);
+
+      let rebate = 0;
+      if (resident) {
+        if (regime === "new" && taxable <= 1200000) rebate = Math.min(taxBefore, 60000);
+        if (regime === "old" && taxable <= 500000)  rebate = Math.min(taxBefore, 12500);
+      }
+      return Math.max(0, taxBefore - rebate);
+    };
+  }
+
+  function compute(regime, income, resident, incomeType, applyStd, oldDeductions){
+    const std = (applyStd && incomeType === "salaried")
+      ? (regime === "new" ? 75000 : 50000)
+      : 0;
+
+    const other = (regime === "old") ? Math.max(0, Number(oldDeductions) || 0) : 0;
+
+    const taxable = Math.max(0, income - std - other);
+
+    const taxBefore = taxBySlabs(taxable, (regime === "new") ? slabsNew : slabsOld);
+
+    let rebate = 0, rebateNote = "";
+    if (resident){
+      if (regime === "new" && taxable <= 1200000) { rebate = Math.min(taxBefore, 60000); rebateNote = "87A rebate applied (≤ ₹12L)."; }
+      else if (regime === "old" && taxable <= 500000) { rebate = Math.min(taxBefore, 12500); rebateNote = "87A rebate applied (≤ ₹5L)."; }
+      else rebateNote = "Rebate not applicable.";
+    } else {
+      rebateNote = "Rebate not applied (non-resident).";
+    }
+
+    const taxAfterRebate = Math.max(0, taxBefore - rebate);
+
+    const baseTaxAt = makeBaseTaxCalculator(regime, resident);
+    const sur = applySurchargeWithMarginalRelief(taxAfterRebate, taxable, regime, baseTaxAt);
+
+    const taxPlusSurcharge = taxAfterRebate + sur.surcharge;
+
+    const cess = taxPlusSurcharge * 0.04;
+    const total = taxPlusSurcharge + cess;
+
+    let surNote = "";
+    if (sur.rate === 0) {
+      surNote = "No surcharge (taxable income ≤ ₹50L).";
+    } else {
+      surNote = "Surcharge @ " + pct(sur.rate) + " (marginal relief " + (sur.relief > 0 ? "applied" : "not needed") + ").";
+      if (regime === "new" && taxable > SUR_T4) surNote += " New regime cap (25%) applied above ₹5Cr.";
+    }
+
+    return {
+      std, other, taxable,
+      taxBefore, rebate, taxAfterRebate,
+      surchargeRate: sur.rate, surcharge: sur.surcharge, marginalRelief: sur.relief,
+      taxPlusSurcharge, cess, total,
+      rebateNote, surNote
+    };
+  }
+
+  function setBadge(badgeEl, isBest){
+    badgeEl.classList.remove("good","bad");
+    if (isBest === null){ badgeEl.textContent = "—"; return; }
+    if (isBest){ badgeEl.textContent = "Cheaper"; badgeEl.classList.add("good"); }
+    else { badgeEl.textContent = "Higher"; badgeEl.classList.add("bad"); }
+  }
+
+  function calculateBoth(){
+    const resident = (byId("resident").value === "yes");
+    const incomeType = byId("incomeType").value;
+    const applyStd = (byId("stdDed").value === "yes");
+    const income = Math.max(0, Number(byId("income").value || 0));
+    const oldDeductions = Math.max(0, Number(byId("oldDeductions").value || 0));
+
+    const n = compute("new", income, resident, incomeType, applyStd, oldDeductions);
+    const o = compute("old", income, resident, incomeType, applyStd, oldDeductions);
+
+    const elig = [];
+    if (incomeType !== "salaried") elig.push("Standard deduction applies only to salaried/pension; currently not applied.");
+    else elig.push("Standard deduction applied (if enabled): New ₹75,000; Old ₹50,000.");
+    elig.push("Old deductions apply only to Old regime; New regime ignores them.");
+    elig.push("Surcharge computed above ₹50L with marginal relief; New regime capped at 25% above ₹5Cr, Old can be 37% above ₹5Cr.");
+    byId("eligibilityNote").innerHTML = elig.map(t => "• " + t).join("<br>");
+
+    // NEW outputs
+    byId("newTotal").textContent = fmt(n.total);
+    byId("newEffective").textContent = "Effective rate: " + (income > 0 ? ((n.total / income) * 100).toFixed(2) : "0.00") + "%";
+    byId("newIncome").textContent = fmt(income);
+    byId("newStd").textContent = fmt(n.std);
+    byId("newOther").textContent = fmt(n.other);
+    byId("newTaxable").textContent = fmt(n.taxable);
+
+    byId("newTaxBefore").textContent = fmt(n.taxBefore);
+    byId("newRebate").textContent = fmt(n.rebate);
+    byId("newTaxAfterRebate").textContent = fmt(n.taxAfterRebate);
+
+    byId("newSurcharge").textContent = (n.surchargeRate === 0 ? fmt(0) : (fmt(n.surcharge) + " (" + pct(n.surchargeRate) + ")"));
+    byId("newTaxPlusSurcharge").textContent = fmt(n.taxPlusSurcharge);
+    byId("newCess").textContent = fmt(n.cess);
+
+    byId("newNotes").innerHTML =
+      "• " + n.rebateNote + "<br>" +
+      "• " + n.surNote + (n.marginalRelief > 0 ? (" (Relief: " + fmt(n.marginalRelief) + ")") : "");
+
+    // OLD outputs
+    byId("oldTotal").textContent = fmt(o.total);
+    byId("oldEffective").textContent = "Effective rate: " + (income > 0 ? ((o.total / income) * 100).toFixed(2) : "0.00") + "%";
+    byId("oldIncome").textContent = fmt(income);
+    byId("oldStd").textContent = fmt(o.std);
+    byId("oldOther").textContent = fmt(o.other);
+    byId("oldTaxable").textContent = fmt(o.taxable);
+
+    byId("oldTaxBefore").textContent = fmt(o.taxBefore);
+    byId("oldRebate").textContent = fmt(o.rebate);
+    byId("oldTaxAfterRebate").textContent = fmt(o.taxAfterRebate);
+
+    byId("oldSurcharge").textContent = (o.surchargeRate === 0 ? fmt(0) : (fmt(o.surcharge) + " (" + pct(o.surchargeRate) + ")"));
+    byId("oldTaxPlusSurcharge").textContent = fmt(o.taxPlusSurcharge);
+    byId("oldCess").textContent = fmt(o.cess);
+
+    byId("oldNotes").innerHTML =
+      "• " + o.rebateNote + "<br>" +
+      "• " + o.surNote + (o.marginalRelief > 0 ? (" (Relief: " + fmt(o.marginalRelief) + ")") : "");
+
+    // comparison
+    const diff = Math.abs(o.total - n.total);
+    byId("savings").textContent = fmt(diff);
+
+    let best = "—", newIsBest = null, oldIsBest = null;
+    if (n.total < o.total){ best = "New Regime"; newIsBest = true; oldIsBest = false; }
+    else if (o.total < n.total){ best = "Old Regime"; newIsBest = false; oldIsBest = true; }
+    else { best = "Both equal"; newIsBest = null; oldIsBest = null; }
+
+    byId("bestRegime").textContent = best;
+    setBadge(byId("newBadge"), newIsBest);
+    setBadge(byId("oldBadge"), oldIsBest);
+  }
+
+  function resetForm(){
+    byId("resident").value = "yes";
+    byId("incomeType").value = "salaried";
+    byId("stdDed").value = "yes";
+    byId("income").value = 1500000;
+    byId("oldDeductions").value = 200000;
+    calculateBoth();
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    byId("calcBtn").addEventListener("click", calculateBoth);
+    byId("resetBtn").addEventListener("click", resetForm);
+
+    ["resident","incomeType","stdDed","income","oldDeductions"].forEach(id => {
+      byId(id).addEventListener("input", calculateBoth);
+      byId(id).addEventListener("change", calculateBoth);
+    });
+
+    calculateBoth();
+  });
+})();
+</script>
+</body>
+</html>
